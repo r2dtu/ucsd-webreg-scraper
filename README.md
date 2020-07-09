@@ -19,7 +19,7 @@ optional arguments:
 
   -h, --help            show this help message and exit
   
-  --dept CSE [CSE ...]  1 or more departments to search in
+  --dept CSE [CSE ...]  1 or more departments to search in (not inputting this will display search in ALL departments)
   
   --available           show classes with available seats only
   
