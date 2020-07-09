@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Swap files
+*.swp
+
+# Custom input files
+*.html
