@@ -7,8 +7,10 @@ from course import find_available_courses, print_courses
 from constants import *
 from parse_utils import parse_data
 
+
 def read_data_from_file( filename, available_only_flag, view_mode ):
     with open( filename, "r" ) as f:
+        # Parse data and print courses according to filters
         soup, all_courses = parse_data( f.read() )
         if available_only_flag:
             all_courses = find_available_courses( all_courses )
@@ -17,19 +19,20 @@ def read_data_from_file( filename, available_only_flag, view_mode ):
 
 def scrape_ucsd_webreg( query_params, extra_query_params, 
                         available_only_flag, view_mode ):
+
+    # Download data from webreg
     data = urllib.parse.parse_qs( query_params + extra_query_params )
     resp = requests.post(SCHED_OF_CLASSES_URL, data).text
 
-    # Just for testing/caching
+    # Just for testing/caching - save data to a file
     f = open( "cse_"+extra_query_params+".html", "w" )
     f.write(resp)
     f.close()
 
+    # Parse data and print courses according to filters
     soup, all_courses = parse_data( resp )
-
     if available_only_flag:
         all_courses = find_available_courses( all_courses )
-
     print_courses( all_courses, view_mode )
 
     # Finally, look for the Page (___ of ___).
@@ -38,6 +41,8 @@ def scrape_ucsd_webreg( query_params, extra_query_params,
     table_data = footer_table.find_all("tr")
     # There should only be one row.. but just for formality
     for row in table_data:
+
+        # HTML parsing is freaking gross
         tds = row.find_all("td")
         tmp = tds[-1].text.split("\t")
         tmp = [s.replace('\n', ' ').strip() for s in tmp if s != "" and s != "\n"]
@@ -47,23 +52,17 @@ def scrape_ucsd_webreg( query_params, extra_query_params,
         curr_page = int( page_str_list[0] )
         last_page = int( page_str_list[2] )
 
+        # If there are more pages to go, then let's continue!
         if (curr_page != last_page):
             scrape_ucsd_webreg( query_params, "&page=" + str(curr_page + 1), 
                                 available_only_flag, view_mode )
 
+        # There should only be one row
         break
 
-
-# Sample usage of this program
-# python scrape_webreg.py
-#
-#   QTR     FA20, WI21, etc.
-#   --dept  space-separated list of departments to search for
-#   --remote        online classes will be displayed
-#   --in_person     in-person classes will be displayed
-#   --hybrid        hybrid classes will be displayed
-#   --all           all class types with given filters (this is same as running 
-#                   --remote --in_person --hybrid
+"""
+Main program driver.
+"""
 if __name__ == '__main__':
 
     import argparse
@@ -88,6 +87,7 @@ if __name__ == '__main__':
                         'AROUND FILENAMES WITH SPECIAL CHARACTERS')
     args = parser.parse_args()
 
+    # Start building the query parameters
     query_params = "selectedTerm=" + args.QTR
     query_params += BROWSER_SETTINGS
     if args.dept:
@@ -98,6 +98,7 @@ if __name__ == '__main__':
     else:
         query_params += DEFAULT_SUBJS
 
+    # Record user filters
     view_mode = 0x0
     if args.remote:
         view_mode |= VIEW_REMOTE_BIT
@@ -110,11 +111,14 @@ if __name__ == '__main__':
     if not args.remote and not args.in_person and not args.hybrid:
         view_mode = VIEW_REMOTE_BIT | VIEW_IN_PERSON_BIT | VIEW_HYBRID_BIT
 
+    # Add the rest of the gunk
     query_params += QUERY_PARAMS
 
+    # If we're just parsing files, just do that (no need to request data)
     if args.files:
         for fname in args.files:
             read_data_from_file( fname, args.available, view_mode )
     else:
+        # Download data and print course info
         scrape_ucsd_webreg( query_params, "", args.available, view_mode )
 

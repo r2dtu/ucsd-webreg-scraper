@@ -3,7 +3,9 @@ from bs4 import BeautifulSoup
 from course import Course
 from constants import *
 
+
 def parse_data( data ):
+
     # Parse the HTML
     soup = BeautifulSoup( data, 'lxml' )
 
@@ -33,6 +35,11 @@ def parse_data( data ):
     RESTRICTION_IDX = 0
     COURSE_NO_IDX = 1
     COURSE_NAME_IDX = 2
+
+    CLASS_TYPE_IDX = 7 #col 8
+    INSTRUCTOR_IDX = 9 #col 10
+    FREE_SEATS_IDX = 10 #col 11
+    LIMIT_IDX = 11 #col 12
 
     # Go through each table of course info
     for i, row in enumerate( gdp_table_data ):
@@ -91,15 +98,14 @@ def parse_data( data ):
             # nonenrtxt means final info
 
             section_info = row.find_all( "td", attrs={"class": "brdr"} )
-
-            CLASS_TYPE_IDX = 7 #col 8
-            INSTRUCTOR_IDX = 9 #col 10
-            FREE_SEATS_IDX = 10 #col 11
-            LIMIT_IDX = 11 #col 12
             curr_course = all_courses[-1]
-            i = 0
+
             curr_length = len( section_info )
+            i = 0
             while i < curr_length:
+
+                # This is a nasty calculation but it's because some rows have less tds
+                # than others, so this keeps the table grid-like without "merged cells"
                 td = section_info[i - (curr_length - len( section_info ))]
                 if 'colspan' in td.attrs and len( td.attrs['colspan'] ) > 0:
                     colspan = int( td.attrs['colspan'][0] )
@@ -132,7 +138,7 @@ def parse_data( data ):
                         curr_course.update_limit( curr_course.get_limit() + int(seats) )
 
                 i += 1
-
+            # End while
 
     return soup, all_courses
 
